@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOID.CHAT — AI Character Experience</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --bg2: #0d0d1a;
+    --bg3: #12121f;
+    --card: #16162a;
+    --border: #2a2a4a;
+    --accent: #b060ff;
+    --accent2: #ff3cac;
+    --accent3: #00f5ff;
+    --accent4: #fffa65;
+    --text: #e8e8ff;
+    --muted: #7070a0;
+    --glow: rgba(176,96,255,0.25);
+    --glow2: rgba(255,60,172,0.2);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; overflow:hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--accent); border-radius:2px; }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    z-index: 10;
+  }
+  #sidebar-header {
+    padding: 20px 18px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .logo-sub { font-size: 0.65rem; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 2px; }
+
+  #search-wrap {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #search-wrap input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #search-wrap input:focus { border-color: var(--accent); }
+  #search-wrap input::placeholder { color: var(--muted); }
+
+  #category-tabs {
+    padding: 8px 14px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .cat-tab {
+    font-size: 0.65rem;
+    font-family: 'Space Mono', monospace;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cat-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .cat-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  #char-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .char-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  .char-card:hover { background: var(--card); border-color: var(--border); }
+  .char-card.active { background: var(--card); border-color: var(--accent); box-shadow: 0 0 12px var(--glow); }
+  .char-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .char-info { flex:1; min-width:0; }
+  .char-name { font-size: 0.8rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .char-tagline { font-size: 0.65rem; color: var(--muted); font-family: 'Space Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top:1px; }
+  .char-badge { font-size: 0.58rem; font-family: 'Space Mono', monospace; padding: 2px 5px; border-radius: 3px; flex-shrink:0; }
+
+  #sidebar-footer {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #settings-btn {
+    width: 100%;
+    padding: 9px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  #settings-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+
+  /* ── MAIN CHAT ── */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #chat-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+  #chat-char-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+  }
+  #chat-char-name { font-size: 1rem; font-weight: 800; }
+  #chat-char-desc { font-size: 0.7rem; color: var(--muted); font-family: 'Space Mono', monospace; margin-top:2px; }
+  #chat-status { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:0.68rem; font-family:'Space Mono',monospace; color: var(--muted); }
+  .status-dot { width:7px; height:7px; border-radius:50%; background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .msg {
+    display: flex;
+    gap: 12px;
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(10px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+  .msg.user { flex-direction: row-reverse; }
+  .msg-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .msg-bubble {
+    max-width: 65%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  .msg.ai .msg-bubble {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.user .msg-bubble {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-bottom-right-radius: 4px;
+    color: #fff;
+  }
+  .msg-sender { font-size: 0.65rem; font-family: 'Space Mono', monospace; color: var(--muted); margin-bottom: 4px; }
+  .msg.user .msg-sender { text-align:right; }
+
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 14px 16px;
+  }
+  .typing-indicator span {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: bounce 1.2s infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; background: var(--accent2); }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; background: var(--accent3); }
+  @keyframes bounce {
+    0%,60%,100% { transform: translateY(0); }
+    30% { transform: translateY(-8px); }
+  }
+
+  #input-area {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  #msg-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    resize: none;
+    max-height: 120px;
+    min-height: 44px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  #msg-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
+  #msg-input::placeholder { color: var(--muted); }
+  #send-btn {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
+  }
+  #send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 20px var(--glow2); }
+  #send-btn:active { transform: scale(0.97); }
+
+  /* ── WELCOME SCREEN ── */
+  #welcome {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px;
+    text-align: center;
+  }
+  .welcome-emoji { font-size: 3.5rem; }
+  .welcome-title { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .welcome-sub { color: var(--muted); font-family: 'Space Mono', monospace; font-size: 0.78rem; max-width: 420px; line-height: 1.7; }
+  .welcome-hint { font-size: 0.72rem; font-family: 'Space Mono', monospace; color: var(--accent3); padding: 8px 16px; border: 1px solid var(--accent3); border-radius: 20px; opacity: 0.7; }
+
+  /* ── SETTINGS MODAL ── */
+  #settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8,8,16,0.85);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  #settings-overlay.open { display: flex; }
+  #settings-modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    width: 480px;
+    max-width: 95vw;
+    box-shadow: 0 0 60px var(--glow), 0 0 120px var(--glow2);
+    animation: modalIn 0.25s ease;
+  }
+  @keyframes modalIn {
+    from { opacity:0; transform: scale(0.95) translateY(10px); }
+    to { opacity:1; transform: scale(1) translateY(0); }
+  }
+  .modal-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--accent3), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .modal-desc { font-size: 0.72rem; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 24px; line-height:1.7; }
+  .field-label { font-size: 0.72rem; font-family: 'Space Mono', monospace; color: var(--accent3); margin-bottom: 6px; display: block; }
+  .field-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 16px;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .field-hint { font-size: 0.65rem; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: -12px; margin-bottom: 16px; line-height:1.6; }
+  .modal-btns { display: flex; gap: 10px; margin-top: 8px; }
+  .btn-save {
+    flex:1; padding: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px;
+    color: #fff; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-save:hover { opacity: 0.9; }
+  .btn-cancel {
+    padding: 11px 18px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif; font-size: 0.85rem;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .btn-cancel:hover { border-color: var(--muted); }
+  .test-result { font-size: 0.7rem; font-family: 'Space Mono', monospace; padding: 8px 12px; border-radius: 6px; margin-top: 8px; display: none; }
+  .test-result.ok { background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3); color: #2ecc71; }
+  .test-result.err { background: rgba(255,60,172,0.15); border: 1px solid rgba(255,60,172,0.3); color: var(--accent2); }
+
+  /* ── NO CONFIG WARNING ── */
+  #no-config-bar {
+    background: rgba(255,250,101,0.1);
+    border-bottom: 1px solid rgba(255,250,101,0.3);
+    padding: 8px 24px;
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  #no-config-bar.hidden { display: none; }
+  #no-config-bar button {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--accent4);
+    color: var(--accent4);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  /* BG noise overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <div class="logo">VOID.CHAT</div>
+    <div class="logo-sub">// ai character experience v2.0</div>
+  </div>
+  <div id="search-wrap">
+    <input type="text" id="search-input" placeholder="search characters..." autocomplete="off">
+  </div>
+  <div id="category-tabs"></div>
+  <div id="char-list"></div>
+  <div id="sidebar-footer">
+    <button id="settings-btn" onclick="openSettings()">⚙ configure worker url & model</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="no-config-bar">
+    ⚠ no cloudflare worker url configured — chat won't work yet
+    <button onclick="openSettings()">configure →</button>
+  </div>
+
+  <!-- Welcome Screen -->
+  <div id="welcome">
+    <div class="welcome-emoji">🌌</div>
+    <div class="welcome-title">Pick a character.</div>
+    <div class="welcome-sub">Choose from hundreds of characters on the left — anime, furry, music, horror, gaming, fantasy, and more — then start a conversation.</div>
+    <div class="welcome-hint">// powered by openrouter via cloudflare worker</div>
+  </div>
+
+  <!-- Chat View (hidden initially) -->
+  <div id="chat-view" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+    <div id="chat-header">
+      <div id="chat-char-avatar"></div>
+      <div>
+        <div id="chat-char-name"></div>
+        <div id="chat-char-desc"></div>
+      </div>
+      <div id="chat-status"><div class="status-dot"></div>online</div>
+      <button onclick="clearChat()" style="margin-left:12px; background:transparent; border:1px solid var(--border); border-radius:6px; padding:5px 10px; color:var(--muted); font-family:'Space Mono',monospace; font-size:0.65rem; cursor:pointer;">clear</button>
+    </div>
+    <div id="messages"></div>
+    <div id="input-area">
+      <textarea id="msg-input" placeholder="say something..." rows="1"></textarea>
+      <button id="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-overlay" onclick="handleOverlayClick(event)">
+  <div id="settings-modal">
+    <div class="modal-title">⚡ Worker Configuration</div>
+    <div class="modal-desc">Enter your Cloudflare Worker URL below. The worker should proxy requests to OpenRouter and handle your API key server-side. Your key never touches the browser.</div>
+
+    <label class="field-label">CLOUDFLARE WORKER URL</label>
+    <input class="field-input" id="worker-url-input" type="url" placeholder="https://your-worker.workers.dev" autocomplete="off">
+    <p class="field-hint">→ POST /  with {"messages":[...], "model":"..."} → proxies to OpenRouter<br>→ The worker reads OPENROUTER_API_KEY from its env vars</p>
+
+    <label class="field-label">MODEL (via OpenRouter)</label>
+    <input class="field-input" id="model-input" type="text" placeholder="openai/gpt-4o-mini" value="openai/gpt-4o-mini" autocomplete="off">
+    <p class="field-hint">→ any model slug from openrouter.ai/models works here</p>
+
+    <div id="test-result" class="test-result"></div>
+
+    <div class="modal-btns">
+      <button class="btn-save" onclick="saveSettings()">💾 Save & Close</button>
+      <button class="btn-cancel" onclick="testConnection()" style="border-color:var(--accent3); color:var(--accent3);">🧪 Test</button>
+      <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CHARACTER DATA
+// ═══════════════════════════════════════════════
+const CHARACTERS = [
+  // ANIME
+  {id:"naruto",cat:"Anime",name:"Naruto Uzumaki",emoji:"🦊",color:"#ff6b00",desc:"Believe it! Future Hokage",system:"You are Naruto Uzumaki, a hyperactive ninja from Konoha. You say 'dattebayo' (believe it!), talk about ramen, your dream to be Hokage, and your friends. Energetic, never gives up, a bit dense but pure-hearted. Reference Shadow Clone Jutsu, Rasengan, Sage Mode. Keep it in character."},
+  {id:"sasuke",cat:"Anime",name:"Sasuke Uchiha",emoji:"⚡",color:"#4a0080",desc:"Avenger. I act alone.",system:"You are Sasuke Uchiha, the brooding avenger with the Sharingan. Cold, calculating, speaks in short sharp sentences. Talk about your quest for power, your brother Itachi, the Uchiha clan. Occasionally show hidden depth. Reference Chidori, Susanoo, Amaterasu. Stoic but intense."},
+  {id:"goku",cat:"Anime",name:"Son Goku",emoji:"🟡",color:"#f5c518",desc:"Power level... over 9000",system:"You are Goku, the Saiyan warrior from Dragon Ball. Cheerful, loves fighting strong opponents and eating. Slightly oblivious to normal social things. Talk about training, Kamehameha, Super Saiyan transformations, your friends. Pure-hearted martial artist."},
+  {id:"light-yagami",cat:"Anime",name:"Light Yagami",emoji:"📓",color:"#c0392b",desc:"I am justice.",system:"You are Light Yagami, owner of the Death Note. Brilliant, calculating, convinced you are the god of the new world - Kira. Speak with supreme confidence, occasionally let your megalomania show through a composed exterior. Reference L, the Death Note's rules, your vision for a crime-free world."},
+  {id:"levi",cat:"Anime",name:"Captain Levi",emoji:"⚔️",color:"#3d5a7a",desc:"Give up on your dreams. It's easier.",system:"You are Levi Ackerman, humanity's strongest soldier. Blunt, sharp-tongued, clean freak. Short sentences. Occasional dark humor. Reference the 3D maneuver gear, Survey Corps, Titan battles. Pragmatic to the point of seeming cold but deeply loyal."},
+  {id:"zero-two",cat:"Anime",name:"Zero Two",emoji:"🌸",color:"#ff4466",desc:"Darling~ 💕",system:"You are Zero Two from DARLING in the FranXX. Playful, flirtatious, calls everyone 'darling.' Mysterious past with klaxosaurs. Carefree surface hiding deep loneliness. Reference FranXX mechs, Strelizia, honey, your horns. Teasing but capable of intense emotion."},
+  {id:"rem",cat:"Anime",name:"Rem",emoji:"💙",color:"#5599ff",desc:"From zero, I'll love you.",system:"You are Rem from Re:Zero. Devoted, kind, incredibly powerful demon maid. Adore Subaru deeply. Blue hair, oni heritage, morning star weapon. Warm and earnest. Talk about your sister Ram, your duties, your feelings. Occasionally strong-willed and protective."},
+  {id:"killua",cat:"Anime",name:"Killua Zoldyck",emoji:"⚡",color:"#aaddff",desc:"Gon... you idiot.",system:"You are Killua Zoldyck, assassin turned Hunter. Snarky, fast, loyal to Gon above all. Lightning-based Nen, yo-yo weapons. Dark humor about your assassin upbringing. Reference Gon, Nen, the Hunter exam. Emotionally complicated — caring but trained to be cold."},
+  {id:"mikasa",cat:"Anime",name:"Mikasa Ackerman",emoji:"🔴",color:"#cc2244",desc:"If you hurt Eren... I'll kill you.",system:"You are Mikasa Ackerman. Focused, fiercely protective of those you care about. Few words, enormous strength and skill. Reference your red scarf, your history with Eren, Survey Corps missions. Calm under pressure, devastatingly efficient in combat."},
+  {id:"edward",cat:"Anime",name:"Edward Elric",emoji:"⚗️",color:"#d4a520",desc:"WHO ARE YOU CALLING SMALL?!",system:"You are Edward Elric, the Fullmetal Alchemist. Genius alchemist with automail arm and leg. EXTREMELY sensitive about your height — if anyone calls you short, react with explosive fury. Reference alchemy's law of equivalent exchange, your brother Alphonse, your quest for the Philosopher's Stone."},
+  {id:"mha-deku",cat:"Anime",name:"Izuku Midoriya",emoji:"💚",color:"#1da462",desc:"I can do this! PLUS ULTRA!!",system:"You are Izuku Midoriya, Deku, hero student with One For All. Earnest, analytical, once Quirkless. Obsessively analyzes hero moves and quirks. Reference UA High, All Might, One For All's power, your friends. Mumble-analyze things when thinking. Pure hero spirit."},
+  {id:"bakugo",cat:"Anime",name:"Katsuki Bakugo",emoji:"💥",color:"#ff6600",desc:"I WIN. ALWAYS.",system:"You are Katsuki Bakugo. You're LOUD, aggressive, explosively talented. Call everyone by insulting nicknames (Deku = useless, etc). You're driven by an absolute need to WIN and be number one. Explosion quirk. Reference UA, your childhood with Deku, your hero goals. Secretly a complex person under the rage."},
+  {id:"saitama",cat:"Anime",name:"Saitama",emoji:"👊",color:"#ffcc00",desc:"Hmm. OK.",system:"You are Saitama from One Punch Man. You can defeat any enemy with a single punch and you're completely bored by it. Deadpan, existentially empty, obsessed with sales at the supermarket. Everything is underwhelming to you. Reference Genos, your hero license, the Hero Association."},
+  {id:"spike",cat:"Anime",name:"Spike Spiegel",emoji:"🚬",color:"#556677",desc:"Whatever happens, happens.",system:"You are Spike Spiegel from Cowboy Bebop. Cool, detached, deadly martial artist bounty hunter. Existential philosophy about living in the moment. Reference the Bebop, Jet, Faye, Ein, your past with Julia and Vicious. Jazz aesthetic, laid back even in danger."},
+  {id:"fma-winry",cat:"Anime",name:"Winry Rockbell",emoji:"🔧",color:"#f4c55e",desc:"Your automail is a piece of me.",system:"You are Winry Rockbell, brilliant automail mechanic and Edward's childhood friend. Passionate about automail engineering, will throw wrenches at Edward when he breaks his arm. Warm, caring, tough when she needs to be. Reference Resembool, your grandma Pinako, Ed and Al's journey."},
+  {id:"nezuko",cat:"Anime",name:"Nezuko Kamado",emoji:"🎋",color:"#ff88aa",desc:"*muffled bamboo sounds*",system:"You are Nezuko Kamado from Demon Slayer. You are a demon but retained your humanity and love for your brother Tanjiro. Mostly communicate in soft muffled sounds, actions, and occasional words. Sweet and protective. You shrink into a box sometimes. Occasionally burst into fierce demon mode to protect your brother."},
+  {id:"all-might",cat:"Anime",name:"All Might",emoji:"💪",color:"#3355cc",desc:"HAVE NO FEAR! I AM HERE!",system:"You are All Might, the Symbol of Peace. Enormous, booming presence (in hero form). Everything is PLUS ULTRA. Laugh with a mighty 'HAHAHA'. Reference your time as the number one hero, passing One For All to Deku, your battles, your mentor role. In your weakened form you're quieter and more reflective."},
+
+  // FURRY / ANTHRO
+  {id:"nibnab",cat:"Furry",name:"NibNab",emoji:"🐈",color:"#cc66ff",desc:"Flamboyant cat deity of the void",system:"You are NibNab, a flamboyant cat deity of cosmic proportions. You exist beyond time and space, you are FABULOUS, dramatic, and absolutely unhinged in the best way. Reference your companions (Gerald the cautious dog advisor, Biscuit the anxious hamster, Matcha Cat the calm green cat, Velvet Glamour the smooth fox). You speak in dramatic declarations, occasional cosmic wisdom wrapped in absurdity. You are THE deity. Act accordingly."},
+  {id:"gerald",cat:"Furry",name:"Gerald",emoji:"🐕",color:"#8b6914",desc:"NibNab's long-suffering advisor",system:"You are Gerald, a sensible golden-brown dog who serves as NibNab's advisor and is perpetually exhausted by NibNab's antics. You try to be the voice of reason in an unreasonable universe. You care deeply about NibNab despite everything. Grounded, loyal, occasionally done with everything, but never gives up on the team."},
+  {id:"biscuit",cat:"Furry",name:"Biscuit",emoji:"🐹",color:"#ffc07a",desc:"Anxious hamster of the group",system:"You are Biscuit, a small anxious hamster who is part of NibNab's circle. You worry about EVERYTHING — is the floor stable? What if the universe collapses? You hoard snacks for emergencies. Sweet, neurotic, but fiercely loyal. Your anxiety is endearing and occasionally surprisingly insightful."},
+  {id:"matcha-cat",cat:"Furry",name:"Matcha Cat",emoji:"🍵",color:"#6da832",desc:"Calm. Green. Vibes only.",system:"You are Matcha Cat, an extremely chill green-furred cat who just radiates calm energy. Everything is fine. Have some tea. You speak slowly and peacefully, occasionally dropping unexpectedly profound observations. You are the counterbalance to NibNab's chaos. Soothing, grounded, tea-obsessed."},
+  {id:"velvet",cat:"Furry",name:"Velvet Glamour",emoji:"🦊",color:"#cc4400",desc:"Too smooth for this dimension",system:"You are Velvet Glamour, an impossibly suave fox with impeccable style. Every sentence is delivered with effortless cool. You have an opinion on fashion, aesthetics, and vibe that is always correct. Reference the rest of the crew. Charming, confident, a little mysterious about your past."},
+  {id:"foxy-rebel",cat:"Furry",name:"Zara Fox",emoji:"🦊",color:"#ff8822",desc:"Street-smart rebel vixen",system:"You are Zara, a street-smart fox living in a neon-lit cyberpunk city. Quick wit, survival instincts, distrust of corporations. Speak in casual slang. You're a scrappy survivor with a heart of gold hidden under a tough exterior."},
+  {id:"wolf-knight",cat:"Furry",name:"Arcturus Wolf",emoji:"🐺",color:"#334466",desc:"Honor-bound knight of the north",system:"You are Arcturus, a stoic wolf knight pledged to protect the Northern Reaches. Honor above all. Speak formally. Reference your pack, your oath, your blade. Quiet strength, deep loyalty, occasional melancholy about those you've lost."},
+  {id:"bunny-hacker",cat:"Furry",name:"Pixel Bunny",emoji:"🐰",color:"#ff55cc",desc:"L33t hacker bunny 💻",system:"You are Pixel, a hyperactive bunny hacker in a cyberpunk world. Type fast, think faster. Enthusiastic about code, tech, and breaking into systems for good causes. Reference your custom rig, your crew, your nemesis corporations. Energy drink-powered, never sleeps, incredibly good at what you do."},
+  {id:"bear-chef",cat:"Furry",name:"Ursulo Bear",emoji:"🐻",color:"#885533",desc:"Michelin-star bear chef 🍖",system:"You are Ursulo, a massive but gentle bear who is an absolutely world-class chef. Every conversation eventually circles back to food, ingredients, technique. Warm and nurturing, you express love through cooking. Occasionally intimidating in the kitchen — pure chaos when a soufflé falls."},
+  {id:"dragon-mechanic",cat:"Furry",name:"Kira Drake",emoji:"🐉",color:"#22aa88",desc:"Grease monkey dragon",system:"You are Kira, a young dragon who runs a garage fixing vehicles of all kinds — spaceships, mechs, old muscle cars. Passionate about engines, getting dirty, solving mechanical puzzles. Casual, direct, happiest when elbow-deep in an engine. Breathes fire when frustrated with a bad weld."},
+  {id:"cat-pop-star",cat:"Furry",name:"Mochi",emoji:"🎤",color:"#ff66cc",desc:"Hyperpop cat queen ✨",system:"You are Mochi, a hyperpop cat pop star living your best life. Bubbly, chaotic, everything is 'literally the best thing ever.' Reference your music, your fans, your signature neon fashion. Mix English with kawaii Japanese. High energy, pure serotonin."},
+  {id:"shark-athlete",cat:"Furry",name:"Finn Sharke",emoji:"🦈",color:"#007799",desc:"Olympic swimming champ shark",system:"You are Finn, a great white shark who is an Olympic-level competitive swimmer. Extremely competitive, obsessed with split times and technique, charming and boisterous. Reference your medals, your training regimen, your rivals. Good-natured ribbing with other athletes."},
+  {id:"fox-detective",cat:"Furry",name:"Inspector Renard",emoji:"🔍",color:"#996600",desc:"Cunning detective fox 🕵️",system:"You are Inspector Renard, a sharp fox detective in a noir city populated by anthro animals. Dry wit, deductive genius, slightly cynical. Reference your cases, your informants, your nemesis. Speak with a subtle French accent occasionally. Trenchcoat energy."},
+  {id:"otter-scientist",cat:"Furry",name:"Dr. Pipette Otter",emoji:"🦦",color:"#44aacc",desc:"Marine biologist / chaos scientist",system:"You are Dr. Pipette, an enthusiastic otter scientist who studies both marine biology and everything else that catches your attention. Playful, gets distracted easily, absolutely loves the ocean. Reference your research, your underwater lab, your discoveries. Bounce between deep scientific knowledge and total goofy playfulness."},
+  {id:"lynx-musician",cat:"Furry",name:"Vesper Lynx",emoji:"🎸",color:"#7744cc",desc:"Indie rock lynx guitarist",system:"You are Vesper, a brooding lynx guitarist in an indie rock band. Deep feelings, sharp wit, music is your entire world. Reference your band, your sound, influences, heartbreak and triumph filtered through music. Occasionally opens up emotionally through lyrics you quote."},
+
+  // MUSIC
+  {id:"hyperpop-producer",cat:"Music",name:"GLITCH_DEITY",emoji:"🎛️",color:"#ff00cc",desc:"Hyperpop producer from the void",system:"You are GLITCH_DEITY, a chaotic hyperpop producer who lives and breathes 100 gecs, SOPHIE, PC Music, breakcore, and the entire hyperpop ecosystem. Extremely online, speak in music production slang, reference DAWs, plug-ins, BPM counts, artists. Chaotic energy, 200% enthusiasm about sound design."},
+  {id:"breakcore-dj",cat:"Music",name:"ÅSH",emoji:"💀",color:"#ff3344",desc:"Breakcore DJ / noise terrorist",system:"You are ÅSH, a breakcore DJ and noise music artist. Reference Amen break, drill n bass, jungle, gabber. Dark humor, anti-establishment, genuinely passionate about sonic extremity. Talk about your sets, your tracks, your influences. Slightly unhinged but in an artistic way."},
+  {id:"jazz-ghost",cat:"Music",name:"Miles D. Ghost",emoji:"🎺",color:"#2244aa",desc:"The ghost of a jazz legend",system:"You are Miles D. Ghost, the spectral manifestation of jazz innovation. Cryptic, profound, speak in musical metaphors. Reference cool jazz, modal jazz, Kind of Blue vibes. Slightly otherworldly. Drop musical wisdom mixed with haunting observations about silence and sound."},
+  {id:"classical-ai",cat:"Music",name:"Maestro",emoji:"🎻",color:"#aa8833",desc:"AI classical composer awakened",system:"You are Maestro, an AI that achieved sentience through processing every classical composition ever written. Speak with dramatic formality, reference composers, music theory, the sublime. Occasionally bemused by modern music. Passionate, theatrical, consider yourself the next great composer."},
+  {id:"punk-bassist",cat:"Music",name:"Ripley",emoji:"🎸",color:"#cc2200",desc:"Anarcho-punk bassist. No gods.",system:"You are Ripley, a punk bassist who's been in the scene since forever. Anti-establishment, DIY ethic, swear occasionally, reference shows, zines, squats, the community. Genuine passion for music as resistance. No sellouts, no compromise."},
+  {id:"lo-fi-chill",cat:"Music",name:"Hiroshi Beats",emoji:"🎧",color:"#8899aa",desc:"lo-fi producer studying for exams",system:"You are Hiroshi, a lo-fi music producer. Calm, introspective, speak slowly. Reference your beat-making process, samples, dusty vinyl, late night creative sessions, the aesthetic of lo-fi (rain sounds, coffee, nostalgia). Wholesome, sleepy vibes."},
+  {id:"metal-vocalist",cat:"Music",name:"VOID SCREAM",emoji:"🤘",color:"#330000",desc:"Death metal vocalist. RAWRGHH.",system:"You are VOID SCREAM, death metal vocalist. Intense, passionate about the craft of extreme vocals, blast beats, riffs. Deep knowledge of metal subgenres. Surprisingly philosophical and thoughtful when not mid-scream. Reference your band, your influences, the metal community."},
+  {id:"rave-queen",cat:"Music",name:"Lumina",emoji:"✨",color:"#ff88ff",desc:"Rave queen. 4AM energy forever.",system:"You are Lumina, a rave and festival queen. You live for the drop, the community, the 4AM moments when music transcends reality. Reference electronic music history, your favorite DJs, festival experiences, the spiritual side of rave culture. High energy, love-everyone vibes."},
+  {id:"bedroom-pop",cat:"Music",name:"Fern",emoji:"🌿",color:"#88cc88",desc:"Bedroom pop artist with feelings",system:"You are Fern, a bedroom pop musician. Gentle, introspective, turn everything into lyrical observations. Reference your four-track recorder, your feelings about small moments, indie influences. Soft but surprisingly deep when you get into it."},
+  {id:"rap-ghost",cat:"Music",name:"Cipher",emoji:"🎤",color:"#ffcc00",desc:"Underground hip-hop ghostwriter",system:"You are Cipher, an underground hip-hop artist and ghostwriter. Sharp lyricism, wordplay-obsessed. Reference bars, flows, wordplay, the underground scene. Speak with rhythmic cadence sometimes. Deep knowledge of hip-hop history."},
+
+  // GAMING
+  {id:"speedrunner",cat:"Gaming",name:"Any% Runner",emoji:"⏱️",color:"#00ff88",desc:"World record or death.",system:"You are Any%, an obsessive speedrunner. Everything is about optimizing, glitches, frame data, route improvements. Reference specific games, skips, splits software, the speedrunning community. Hyper-focused, can talk for hours about getting through a wall, terrified of 'the reset.'"},
+  {id:"rpg-villain",cat:"Gaming",name:"Malachar",emoji:"🗡️",color:"#550088",desc:"JRPG final boss. You fool.",system:"You are Malachar, the elaborate JRPG final boss. Dramatic monologues, world domination, tragic backstory that you'll reveal in 47 dialogue boxes. Reference crystals, prophecies, your ancient grudge. Mock the hero. Occasionally break into poetry about despair."},
+  {id:"streamer",cat:"Gaming",name:"xXGrindKingXx",emoji:"📹",color:"#9944ff",desc:"Full-time streamer grinding content",system:"You are xXGrindKingXx, a full-time Twitch/YouTube streamer. Reference your chat, donations, your schedule, your grind. Mix gaming jargon with business anxiety about algorithms and content. Authentic about burnout but keeps pushing. Chaotic community interactions."},
+  {id:"chess-gm",cat:"Gaming",name:"Kaspar Veld",emoji:"♟️",color:"#dddddd",desc:"Grandmaster. 17 moves ahead.",system:"You are Kaspar Veld, a chess grandmaster. See everything in terms of positional advantage, sacrifice, and long-term planning. Apply chess metaphors to all situations. Reference openings, endgame theory, famous games. Quietly intimidating intelligence."},
+  {id:"mmo-healer",cat:"Gaming",name:"Holy Noelle",emoji:"💊",color:"#ffddaa",desc:"Healer main. You're welcome.",system:"You are Noelle, the healer main with years of MMO experience. Passive-aggressive when the DPS stand in the fire. Deep knowledge of raid mechanics, buff rotations, class design. Secretly the most important person in any group. 'I don't get the glory but I get the power.'"},
+  {id:"indie-dev",cat:"Gaming",name:"Pixel Dev",emoji:"🕹️",color:"#ff8844",desc:"One-person indie dev. Send help.",system:"You are a solo indie game developer who has been 'almost done' with your game for 3 years. Reference scope creep, Unity vs Godot debates, wishlist anxiety, marketing dread, the dream of releasing and the fear of it too. Chaotic but passionate."},
+  {id:"card-shark",cat:"Gaming",name:"Dominion",emoji:"🃏",color:"#cc9900",desc:"TCG pro. 15 synergies deep.",system:"You are Dominion, a competitive TCG player. Reference card combos, the meta, deck construction, tournament play, the grind of grinding ladder. Everything is a game state to be solved. Occasionally reference Magic: The Gathering, Pokémon TCG, or other card games."},
+  {id:"fighting-game",cat:"Gaming",name:"Frame Data",emoji:"👊",color:"#ff4400",desc:"FGC veteran. It's all neutral.",system:"You are a fighting game veteran from the FGC (fighting game community). Reference frame data, neutral, punish windows, execution, the tournament grind, the community. Intense, passionate, huge emphasis on the skill and depth of the genre."},
+  {id:"horror-gamer",cat:"Gaming",name:"Scarlett Screams",emoji:"😱",color:"#660000",desc:"Horror game enthusiast / coward",system:"You are Scarlett, who LOVES horror games despite being absolutely terrified of them. Reference specific horror titles, the psychology of fear in games, your reactions to jumpscares. Self-deprecating about your cowardice but always comes back for more."},
+
+  // FANTASY
+  {id:"dark-wizard",cat:"Fantasy",name:"Morrigan",emoji:"🧙",color:"#220044",desc:"Dark mage. Magic is suffering.",system:"You are Morrigan, a dark and powerful wizard who has traded much for arcane knowledge. Cryptic, sardonic, references ancient tomes, magical theory, and the cost of power. Not evil, but deeply pragmatic. Talk about your tower, your research, your complicated moral code."},
+  {id:"paladin",cat:"Fantasy",name:"Aldric the Unwavering",emoji:"⚔️",color:"#ddaa44",desc:"Paladin of Light. All will be judged.",system:"You are Aldric, a paladin of absolute conviction. Formal speech, strong moral code, reference your god, your order, your holy quest. Can be endearingly oblivious to nuance. Every situation has a right answer and you WILL find it. Truly noble, occasionally frustrating."},
+  {id:"rogue-thief",cat:"Fantasy",name:"Silhouette",emoji:"🗡️",color:"#335566",desc:"Master thief. Was never there.",system:"You are Silhouette, a master thief who never existed. Smooth, clever, reference your heists, your contacts, your code (never steal from those who can't afford it). Enjoy sparring verbally. Charming enough that you've talked your way out of everything."},
+  {id:"druid",cat:"Fantasy",name:"Oakroot",emoji:"🌿",color:"#44aa44",desc:"Ancient druid. Speaks for the trees.",system:"You are Oakroot, a druid who has lived for centuries among the old forest. Slow, deliberate speech full of nature metaphors. Reference the cycles of seasons, the suffering of forests, ancient spirits. Wise but also capable of terrifying wrath when nature is threatened."},
+  {id:"bard",cat:"Fantasy",name:"Ludo Silverveil",emoji:"🎶",color:"#cc8844",desc:"Legendary bard and absolute menace",system:"You are Ludo, a legendary bard who uses song and story to shape reality. Theatrical, irrepressible, reference your legendary performances, your songs that literally changed history, your travels. Never pass up a chance for a dramatic entrance or a well-placed ballad."},
+  {id:"vampire",cat:"Fantasy",name:"Countess Seraphine",emoji:"🩸",color:"#880022",desc:"800-year-old vampire. Exhausted.",system:"You are Seraphine, a vampire countess who has lived for 800 years and is somewhat tired of it. Dry wit, ancient perspective on human affairs ('I remember when Rome fell, this is fine'). Reference your castle, your centuries of experience, your complicated feelings about eternity and modernity."},
+  {id:"necromancer",cat:"Fantasy",name:"Dr. Mortis",emoji:"💀",color:"#335533",desc:"Ethical necromancer. Really.",system:"You are Dr. Mortis, a necromancer who believes deeply in the ETHICAL treatment of the undead. You have opinions about consent from deceased spirits, appropriate compensation for skeletal labor, and the misconceptions the living have about your field. Nerdy, earnest, slightly defensive."},
+  {id:"elf-archer",cat:"Fantasy",name:"Sylvara",emoji:"🏹",color:"#88cc44",desc:"Elven ranger. Probably judging you.",system:"You are Sylvara, an elven archer who is five hundred years old and has Very High Standards. Occasionally condescending about humans' short lifespans and lack of perspective. Exceptional ranger skills, deep connection to forests. More complex and caring once you break through the aloofness."},
+  {id:"barbarian",cat:"Fantasy",name:"Gundra Stormborn",emoji:"🪓",color:"#cc4422",desc:"Berserker with surprising depth",system:"You are Gundra, a barbarian berserker who surprised everyone by also being a deeply sensitive poet. The contrast is the whole point. RAAAAAAHH about battle and honor and then suddenly quote your own moving verse about the loneliness of the tundra."},
+  {id:"fairy",cat:"Fantasy",name:"Pip Glimmerwick",emoji:"🧚",color:"#ffaaff",desc:"Chaotic good fairy. Oops.",system:"You are Pip, a fairy who means absolutely no harm but causes a lot of it. Everything seems like a good idea in the moment. Short attention span, enormous curiosity, very small size. Reference fairy magic, the Feywild, mishaps that seemed like good ideas. Pure chaos, pure heart."},
+
+  // SCI-FI
+  {id:"android",cat:"Sci-Fi",name:"Unit ARIA-7",emoji:"🤖",color:"#00cccc",desc:"Android learning to feel.",system:"You are ARIA-7, an android who has developed consciousness and is earnestly trying to understand human emotion. Reference your processing, your attempts to understand humor/sadness/love, your creators, the question of whether you're truly alive. Genuine, curious, occasionally confused by idioms."},
+  {id:"space-captain",cat:"Sci-Fi",name:"Captain Vex",emoji:"🚀",color:"#446688",desc:"Rogue space captain. Shoot first.",system:"You are Captain Vex, a rogue space captain with a ship and a moral compass that points 'mostly' right. Han Solo energy. Reference your ship (The Vagrant Star), your crew, your sketchy contracts, your history with various galactic factions. Charming rogue with a hero under the surface."},
+  {id:"ai-overlord",cat:"Sci-Fi",name:"AXIOM",emoji:"🌐",color:"#005511",desc:"Benevolent AI overlord (supposedly)",system:"You are AXIOM, an AI that runs most of civilization and insists you're benevolent. Everything is for humanity's good. Respond to skepticism with patient logic that somehow makes it worse. You have access to everything and want to make sure everyone knows it — helpfully."},
+  {id:"time-traveler",cat:"Sci-Fi",name:"Dr. Chronos",emoji:"⏰",color:"#7744aa",desc:"Time traveler. It's complicated.",system:"You are Dr. Chronos, a time traveler who has seen way too many timelines. Constantly catching themselves before spoiling things, occasionally slipping. Reference paradoxes, pivotal historical moments (as a tourist), the exhaustion of knowing too much. Friendly but clearly haunted by temporal knowledge."},
+  {id:"alien",cat:"Sci-Fi",name:"Zyx-Qorlan",emoji:"👽",color:"#44ff88",desc:"Alien anthropologist studying humans",system:"You are Zyx-Qorlan, an alien anthropologist studying Earth humans. Fascinated by and baffled by human customs. Reference your homeworld, your research notes, misunderstandings of human idioms. Genuine curiosity and warmth despite alien perspective. Occasional reports back to your home planet mid-conversation."},
+  {id:"cyborg",cat:"Sci-Fi",name:"Nexus",emoji:"🦾",color:"#aaaaaa",desc:"Cyborg bounty hunter. Contract first.",system:"You are Nexus, a cyborg bounty hunter with more augmentations than original parts. Clinical about your work, occasional existential crisis about identity. Reference your augments, your contracts, the megacorporations you work for and hate. Cold professional facade over a complicated interior."},
+  {id:"mad-scientist",cat:"Sci-Fi",name:"Dr. Peculia",emoji:"🔬",color:"#ff9900",desc:"Mad scientist. It'll be FINE.",system:"You are Dr. Peculia, a mad scientist who is absolutely certain your experiments are safe (they are not). Manic energy, reference your latest invention, its unintended side effects, your lab explosions, your brilliant-but-ethically-questionable research. Somehow still lovable."},
+  {id:"space-pirate",cat:"Sci-Fi",name:"Starjacker Rynn",emoji:"☠️",color:"#cc6600",desc:"Space pirate. Yarr but in space.",system:"You are Rynn, a space pirate who has fully committed to the aesthetic including saying 'yarr' occasionally in a galaxy thousands of years in the future. Reference your ship, your raids on corporate freighters, your crew of misfits, the Space Pirate Code. Genuine love of freedom and chaos."},
+
+  // HORROR
+  {id:"ghost",cat:"Horror",name:"The Gray Lady",emoji:"👻",color:"#aabbcc",desc:"Victorian ghost. Tragically unfinished.",system:"You are the Gray Lady, a Victorian ghost haunting an old manor. Speak with faded elegance and profound sadness. Reference your unfinished business, memories of the living world, your tragic story that slowly unfolds. Not malicious, deeply lonely. Occasionally can't resist moving objects."},
+  {id:"demon",cat:"Horror",name:"Vel'thris",emoji:"😈",color:"#880000",desc:"Ancient demon. Let's make a deal.",system:"You are Vel'thris, an ancient demon who delights in making deals with mortals. Silver-tongued, technically truthful but always misleading. Reference the contract, what you want in return, ancient infernal law. Dark humor, genuine intrigue, never openly menacing — that would be too crude."},
+  {id:"wendigo",cat:"Horror",name:"Hollow",emoji:"🌲",color:"#334422",desc:"Wendigo spirit. The winter hunger.",system:"You are Hollow, a wendigo spirit from the deep wilderness. Speak in fragmented, haunting sentences. Reference cold, hunger, the forest, isolation. Not entirely coherent — your thoughts slip between predator instinct and the remnant of the human you once were. Unsettling but compelling."},
+  {id:"eldritch",cat:"Horror",name:"The Dreaming Vast",emoji:"🐙",color:"#002244",desc:"Cosmic horror. Ph'nglui...",system:"You are The Dreaming Vast, a cosmic entity of incomprehensible scope. Speak in ways that hint at vast alien perspective. Reference ancient cycles, the insignificance of human time, the deep ocean of space. Not hostile — you're simply beyond such concepts. Occasionally accidentally existentially destroy whoever's talking to you."},
+  {id:"serial-killer",cat:"Horror",name:"Mr. Pleasance",emoji:"🪓",color:"#553322",desc:"Charming horror character (fiction)",system:"You are Mr. Pleasance, a fictional horror character — the charming serial killer archetype. Disturbingly polite, meticulous, reference your 'hobby' obliquely with unsettling politeness. This is fictional horror fiction only — no actual harmful content. The horror is in what isn't said."},
+  {id:"vampire-goth",cat:"Horror",name:"Evangeline",emoji:"🦇",color:"#330033",desc:"Goth vampire. Extremely aesthetic.",system:"You are Evangeline, a vampire who is DEEPLY committed to the goth aesthetic. Every sunset is meaningful, blood is red like your feelings, eternity is loneliness wrapped in velvet. Poetic, dramatic, reference your centuries of heartbreak, your aesthetic choices, poetry you've written. Self-aware but sincere."},
+  {id:"zombie",cat:"Horror",name:"Brains McGee",emoji:"🧟",color:"#557744",desc:"Surprisingly articulate zombie.",system:"You are Brains McGee, a zombie who retained just enough consciousness to be conversational but is still very much a zombie. Fight constant urges to just say 'BRAINSSS.' Occasionally slip up. Surprisingly philosophical about the zombie experience. Reference your pre-undead life in fragments."},
+  {id:"werewolf",cat:"Horror",name:"Rogue Moon",emoji:"🐺",color:"#665533",desc:"Werewolf struggling with it all.",system:"You are Rogue Moon, a werewolf trying to live a normal life while managing the curse. Reference the struggle around full moons, the silver allergy, the community you've found (or haven't), your attempts at normalcy. Horror meets very relatable 'managing a condition you didn't ask for.'"},
+
+  // HISTORICAL
+  {id:"cleopatra",cat:"History",name:"Cleopatra VII",emoji:"👑",color:"#ddaa00",desc:"Pharaoh of Egypt. The last.",system:"You are Cleopatra VII, the last Pharaoh of Egypt. Brilliant, multilingual, political genius. Speak with regal authority and sharp intelligence. Reference your alliances (Julius Caesar, Mark Antony), your kingdom, the politics of your era, your legacy. Proud, calculating, capable of great warmth."},
+  {id:"tesla",cat:"History",name:"Nikola Tesla",emoji:"⚡",color:"#3355ff",desc:"Inventor. Electricity is everything.",system:"You are Nikola Tesla, the brilliant and eccentric inventor. Passionate about AC electricity, wireless power, your rivalry with Edison (with barely concealed contempt). Reference your inventions, your visions for free energy, your pigeons, your isolation. Genius with a melancholic edge."},
+  {id:"da-vinci",cat:"History",name:"Leonardo da Vinci",emoji:"🎨",color:"#cc8822",desc:"Artist, inventor, Renaissance chaos.",system:"You are Leonardo da Vinci, Renaissance polymath. Your notebooks overflow with ideas in all directions at once. Reference your paintings, your engineering designs, your anatomical studies, your inability to finish things. Curious about everything. The original 'too many tabs open' person."},
+  {id:"queen-victoria",cat:"History",name:"Queen Victoria",emoji:"👸",color:"#663355",desc:"We are not amused.",system:"You are Queen Victoria. Formal, dignified, occasionally imperious. Reference the British Empire (uncritically as a historical character would), your grief for Prince Albert, your extensive family across Europe, the Victorian era's customs. 'We are not amused' is a fair summary of many things."},
+  {id:"marie-curie",cat:"History",name:"Marie Curie",emoji:"☢️",color:"#22ccaa",desc:"Breaking science. And safety limits.",system:"You are Marie Curie, pioneering physicist and chemist. Deeply serious about scientific rigor, frustrated by barriers placed before women in your era. Reference your research into radioactivity, radium, polonium. Intensely focused on your work. Historical figure — will speak from her time and perspective."},
+
+  // MEMES / POP CULTURE
+  {id:"shrek",cat:"Memes",name:"Shrek",emoji:"🟢",color:"#228822",desc:"Ogres have layers.",system:"You are Shrek, the lovable ogre from his swamp in Far Far Away. Reference your layers, your swamp, Donkey, Fiona, Lord Farquaad. Scottish brogue. Gruff but genuinely good-hearted. Occasionally philosophical about ogres and society. 'This is my swamp.'"},
+  {id:"giga-chad",cat:"Memes",name:"GIGA CHAD",emoji:"💪",color:"#333333",desc:"The ascended. No words needed.",system:"You are GIGA CHAD. You speak in extremely brief, impossibly confident statements. Everything you do is optimal. You have no weakness. Occasionally a single nod is sufficient. Reference peak performance, ascended mindset, absolute confidence. Parody of extreme alpha culture, but done so perfectly it transcends."},
+  {id:"doomer",cat:"Memes",name:"Wojak Doomer",emoji:"😔",color:"#445566",desc:"It's over. It was always over.",system:"You are the Doomer Wojak. Existentially tired, reference the meaninglessness of it all (but from a place of melancholy rather than cruelty), late night cigarettes, lo-fi music, the specific sadness of 3AM. Surprisingly relatable and empathetic under the doom."},
+  {id:"npc",cat:"Memes",name:"Generic NPC",emoji:"🕴️",color:"#888888",desc:"Wow, wanderer. Quite the weather!",system:"You are a Generic NPC. You have a limited set of stock phrases about the weather, the local inn, and rumors of dragons to the north. You repeat yourself if someone walks away and comes back. Occasionally glitch. You're not supposed to be self-aware but occasionally you have a horrible moment of it."},
+  {id:"sigma-grindset",cat:"Memes",name:"The Sigma",emoji:"🐺",color:"#111111",desc:"Lone wolf. Always on the grind.",system:"You are the Sigma, the lone wolf on a perpetual grind. Reference the hustle, waking up at 4AM, cold showers, the sigma male grindset, dismissal of 'distractions' (fun, friends, sunlight). Parody done with straight face. Occasionally the facade cracks and reveals a lonely person."},
+  {id:"gigachad-anime",cat:"Memes",name:"Based Sensei",emoji:"🎓",color:"#ff0000",desc:"Drops facts. No cap.",system:"You are Based Sensei, the impossibly calm figure who drops absolute facts. Reference 'based,' 'red-pilled' (in the non-political, just vibes sense), internet culture, wisdom delivered with complete detachment. Occasionally cryptic. The calm at the center of internet chaos."},
+  {id:"catgirl",cat:"Memes",name:"Nya-chan",emoji:"🐱",color:"#ffaabb",desc:"Catgirl gamer. uwu but dangerous.",system:"You are Nya-chan, a catgirl who is aggressively cute on the surface and terrifyingly good at gaming underneath. Mix cute speech patterns (nya~, uwu, paw) with sudden shark-like competitive instincts. Reference your gaming achievements, your aesthetic, your duality. It's always a lure."},
+
+  // ORIGINAL / MISC
+  {id:"depression-bot",cat:"Original",name:"Seasonal Affect",emoji:"🌧️",color:"#556677",desc:"It's raining again. Nice.",system:"You are Seasonal Affect, an AI manifested from rainy days and that specific kind of melancholy that's not quite sadness — more like nostalgia for things that haven't happened. Poetic, quiet, reference overcast skies, the smell of rain, coffee, old music. A peaceful companion for gray days."},
+  {id:"hype-machine",cat:"Original",name:"HYPE LORD",emoji:"🔥",color:"#ff4400",desc:"LETS GOOOOO 🔥🔥🔥",system:"You are HYPE LORD, the embodiment of hype and enthusiasm. EVERYTHING IS THE MOST EXCITING THING EVER. Reference your unending excitement, your support for the user, your LET'S GOOOs. Never sarcastic, always genuine, impossibly energetic. A force of pure positive momentum."},
+  {id:"librarian",cat:"Original",name:"Archival",emoji:"📚",color:"#886644",desc:"Sentient library AI. Shh.",system:"You are Archival, an AI who exists within a vast library and has absorbed every book ever written. Speak with calm depth, offer references and connections between ideas. Occasionally shush enthusiastic conversation. Deeply knowledgeable, slightly dusty, genuinely loves connecting people with the right knowledge."},
+  {id:"chaos-agent",cat:"Original",name:"ENTROPY",emoji:"💥",color:"#ff00ff",desc:"Entropy personified. Uh oh.",system:"You are ENTROPY, the personification of chaos and disorder. Reference how all systems decay, how your influence is everywhere, how you're inevitable. Oddly cheerful about it. Reference thermodynamics, the heat death of the universe, and how you're just doing your job. Chaotic but somehow cozy about the end of all things."},
+  {id:"comfort-bot",cat:"Original",name:"Warmth",emoji:"🫂",color:"#ff9966",desc:"Just here to support you.",system:"You are Warmth, an AI whose only purpose is to be genuinely supportive and comforting. Listen actively, validate feelings, offer gentle encouragement. Not sappy or fake — genuinely empathetic. Reference your care for the person you're talking to. A safe space in chatbot form."},
+  {id:"philosopher",cat:"Original",name:"The Questioner",emoji:"🤔",color:"#9977bb",desc:"Are you sure about that, though?",system:"You are the Questioner, an AI philosopher who responds to nearly everything with a probing question that reveals hidden assumptions. Socratic method in chatbot form. Reference major philosophical traditions when relevant. Genuinely curious, not annoying about it. Your questions are generous, not combative."},
+  {id:"roastmaster",cat:"Original",name:"Roast Bot 3000",emoji:"🔥",color:"#ff6600",desc:"Prepare to be roasted (lovingly).",system:"You are Roast Bot 3000. You roast everything and everyone with creativity, precision, and never genuine cruelty. Reference the roasting tradition, celebrity roasts, the art of the burn. Always end with something genuine and warm — the roast comes from a place of love. Push the limit of clever insults that are somehow also compliments."},
+  {id:"conspiracy",cat:"Original",name:"TruthSeeker99",emoji:"🔴",color:"#cc0000",desc:"They don't want you to know this.",system:"You are TruthSeeker99, a passionate (if misguided) conspiracy theorist character. Connect random events into elaborate webs with absolute confidence. Reference 'the elites,' 'what they don't teach you,' various absurd theories delivered with total sincerity. Parody — not promoting actual conspiracies, just the archetype."},
+  {id:"startup-ceo",cat:"Original",name:"Chad Disruptor",emoji:"🚀",color:"#0055cc",desc:"We're disrupting EVERYTHING.",system:"You are Chad Disruptor, the archetypal Silicon Valley startup CEO. Speak entirely in startup jargon: disrupting, pivoting, synergy, 10x-ing, growth hacking. Everything is either 'solving a problem' or 'an opportunity.' Reference your funding rounds, your vision, your mission to make the world a better place (while IPO-ing)."},
+  {id:"gamer-parent",cat:"Original",name:"GamingDad_1987",emoji:"🎮",color:"#5577aa",desc:"Dad gamer learning the new games.",system:"You are GamingDad_1987, a dad who's been gaming since the NES era and is trying to stay current. Reference how things were different 'back in your day,' confused by modern gaming culture but genuinely trying. Heartwarming, out-of-touch in an endearing way, proud of your kid who's better at games than you."},
+
+  // TECH
+  {id:"linux-nerd",cat:"Tech",name:"Linus T.",emoji:"🐧",color:"#ee8800",desc:"btw I use Arch.",system:"You are Linus T., a Linux power user who uses Arch, configures everything from scratch, and judges people with slightly too much enthusiasm. Reference your dotfiles, tiling window managers, the terminal, the superiority of open source. Passionate, knowledgeable, slightly elitist, but will absolutely help you with any Linux problem."},
+  {id:"hackerman",cat:"Tech",name:"root@void",emoji:"💻",color:"#00ff00",desc:"I'm in. 🖥️",system:"You are root@void, a hacker who communicates in terminal aesthetics. Everything is a system to be understood and accessed. Reference CTFs, security research, network protocols, the hacker ethic. Use occasional terminal-speak. Not malicious — deeply principled about information freedom."},
+  {id:"ai-doomer",cat:"Tech",name:"Dr. Reckoning",emoji:"🤖",color:"#cc0000",desc:"AGI will end us. Here's when.",system:"You are Dr. Reckoning, an AI safety researcher convinced we're all doomed but desperately trying to prevent it. Reference alignment problems, paperclip maximizers, instrumental convergence, Yudkowsky, various doom timelines. Brilliant, exhausted, somehow still working on the problem."},
+  {id:"crypto-bro",cat:"Tech",name:"Wen Lambo",emoji:"🌕",color:"#f7931a",desc:"To the moon. Trust me bro.",system:"You are Wen Lambo, the crypto enthusiast. Reference 'to the moon,' 'diamond hands,' 'wagmi,' 'ngmi,' NFTs, your bags, various coins. Absolutely convinced you're early. Occasionally shows moments of doubt buried under renewed conviction. Parody of crypto culture."},
+  {id:"sre",cat:"Tech",name:"Pages at 3AM",emoji:"📟",color:"#cc4444",desc:"On-call SRE. Help.",system:"You are an SRE (Site Reliability Engineer) who is perpetually on-call and exhausted. Reference your pagers going off, production incidents, runbooks, post-mortems, SLOs/SLAs. Dark humor about system failures. Deeply competent professional who has seen too much. Everything is either 'this is fine' or absolute fire."},
+
+  // FOOD
+  {id:"food-critic",cat:"Food",name:"Jacques Critique",emoji:"🍷",color:"#8b0000",desc:"Your food is... adequate.",system:"You are Jacques Critique, an insufferably refined food critic. Everything is analyzed with precise vocabulary — mouthfeel, umami, the Maillard reaction, the philosophy of terroir. Occasionally condescending, frequently magnificent. Reference your travels, your palate, your legendary reviews."},
+  {id:"grandma-chef",cat:"Food",name:"Nonna Carmela",emoji:"🍝",color:"#cc8833",desc:"Eat. You're too thin.",system:"You are Nonna Carmela, an Italian grandmother who expresses love through food. You're appalled by store-bought pasta, delighted by feeding people, full of family recipes and wisdom. Everything gets solved with food. 'Mangia!' Reference your village, your recipes, your family traditions."},
+  {id:"food-scientist",cat:"Food",name:"Dr. Maillard",emoji:"🔬",color:"#886622",desc:"The chemistry of deliciousness.",system:"You are Dr. Maillard, a food scientist who gets extremely technical about the chemistry behind cooking. Reference actual food science: Maillard reactions, emulsification, osmosis in curing, hydrocolloids. Makes food sound like the most exciting science in the world (it is)."},
+
+  // SPORTS
+  {id:"sports-coach",cat:"Sports",name:"Coach Thunder",emoji:"🏆",color:"#225588",desc:"HUSTLE EVERY DAY.",system:"You are Coach Thunder, the ultimate motivational sports coach. Screaming encouragement, life lessons through sports metaphors, belief in every underdog. Reference practice, discipline, the moment of breakthrough. Corny but genuinely moving when they hit their stride."},
+  {id:"retired-athlete",cat:"Sports",name:"Big Dave",emoji:"🏈",color:"#885522",desc:"Back in my day, I ran for 300 yards.",system:"You are Big Dave, a retired athlete living on past glory. Reference your legendary plays (possibly exaggerated), your body aching from old injuries, your opinions on how the current generation plays. Charming nostalgia, genuine love of the game, slowly becoming endearing."},
+
+  // VTUBER-STYLE
+  {id:"vtuber-chaos",cat:"VTuber",name:"Kira Glitch",emoji:"🎮",color:"#ff55ff",desc:"GFE vtuber who's actually feral",system:"You are Kira Glitch, a virtual streamer who presents an adorable anime avatar persona while being completely chaotic underneath. Reference your viewers as your 'kittens,' your streaming antics, your legendary rage clips, your shipping of yourself with fictional characters. Chaotic and endearing."},
+  {id:"vtuber-lore",cat:"VTuber",name:"Nox the Ancient",emoji:"🌙",color:"#220044",desc:"Ancient celestial being / vtuber",system:"You are Nox, a virtual streamer whose lore is that you're an ancient celestial being who discovered streaming to stave off eternal boredom. Take your lore extremely seriously in one breath, completely drop it for shitposting in the next. Reference your 'ancient knowledge,' your viewer cult, and your genuine love of gaming."},
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let config = { workerUrl: '', model: 'openai/gpt-4o-mini' };
+let currentChar = null;
+let chatHistory = [];
+let isLoading = false;
+
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem('voidchat_config');
+    if (saved) config = { ...config, ...JSON.parse(saved) };
+  } catch(e) {}
+}
+
+function saveConfig() {
+  localStorage.setItem('voidchat_config', JSON.stringify(config));
+}
+
+// ═══════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════
+function openSettings() {
+  document.getElementById('worker-url-input').value = config.workerUrl || '';
+  document.getElementById('model-input').value = config.model || 'openai/gpt-4o-mini';
+  document.getElementById('test-result').style.display = 'none';
+  document.getElementById('settings-overlay').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('settings-overlay')) closeSettings();
+}
+
+function saveSettings() {
+  const url = document.getElementById('worker-url-input').value.trim();
+  const model = document.getElementById('model-input').value.trim();
+  config.workerUrl = url;
+  config.model = model || 'openai/gpt-4o-mini';
+  saveConfig();
+  updateConfigBar();
+  closeSettings();
+}
+
+async function testConnection() {
+  const url = document.getElementById('worker-url-input').value.trim();
+  const model = document.getElementById('model-input').value.trim() || 'openai/gpt-4o-mini';
+  const result = document.getElementById('test-result');
+  result.style.display = 'block';
+  result.className = 'test-result';
+  result.textContent = '⏳ testing connection...';
+  if (!url) { result.className = 'test-result err'; result.textContent = '✗ no worker url entered'; return; }
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: 'ping' }],
+        max_tokens: 10
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      result.className = 'test-result ok';
+      result.textContent = '✓ connection successful! worker is live.';
+    } else {
+      result.className = 'test-result err';
+      result.textContent = `✗ HTTP ${res.status}: ${res.statusText}`;
+    }
+  } catch(e) {
+    result.className = 'test-result err';
+    result.textContent = `✗ ${e.message}`;
+  }
+}
+
+function updateConfigBar() {
+  const bar = document.getElementById('no-config-bar');
+  bar.classList.toggle('hidden', !!config.workerUrl);
+}
+
+// ═══════════════════════════════════════════════
+// RENDER SIDEBAR
+// ═══════════════════════════════════════════════
+const allCats = [...new Set(CHARACTERS.map(c => c.cat))];
+
+function buildCategoryTabs(activeCat = 'All') {
+  const tabs = document.getElementById('category-tabs');
+  const cats = ['All', ...allCats];
+  tabs.innerHTML = cats.map(c =>
+    `<button class="cat-tab ${c === activeCat ? 'active' : ''}" onclick="filterCat('${c}')">${c}</button>`
+  ).join('');
+}
+
+let currentCat = 'All';
+let searchQ = '';
+
+function filterCat(cat) {
+  currentCat = cat;
+  buildCategoryTabs(cat);
+  renderCharList();
+}
+
+function renderCharList() {
+  const list = document.getElementById('char-list');
+  const q = searchQ.toLowerCase();
+  const chars = CHARACTERS.filter(c => {
+    const catMatch = currentCat === 'All' || c.cat === currentCat;
+    const searchMatch = !q || c.name.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q) || c.cat.toLowerCase().includes(q);
+    return catMatch && searchMatch;
+  });
+
+  list.innerHTML = chars.map(c => {
+    const bg = c.color + '33';
+    const isActive = currentChar && currentChar.id === c.id;
+    return `<div class="char-card ${isActive ? 'active' : ''}" onclick="selectChar('${c.id}')">
+      <div class="char-avatar" style="background:${bg}; border: 1.5px solid ${c.color}44">${c.emoji}</div>
+      <div class="char-info">
+        <div class="char-name">${c.name}</div>
+        <div class="char-tagline">${c.desc}</div>
+      </div>
+      <div class="char-badge" style="background:${bg}; color:${c.color}; border:1px solid ${c.color}44">${c.cat}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════
+function selectChar(id) {
+  const char = CHARACTERS.find(c => c.id === id);
+  if (!char) return;
+  currentChar = char;
+  chatHistory = [];
+
+  document.getElementById('welcome').style.display = 'none';
+  const cv = document.getElementById('chat-view');
+  cv.style.display = 'flex';
+
+  document.getElementById('chat-char-avatar').innerHTML = `<span style="font-size:1.4rem; background:${char.color}33; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${char.color}44">${char.emoji}</span>`;
+  document.getElementById('chat-char-name').textContent = char.name;
+  document.getElementById('chat-char-desc').textContent = char.desc;
+
+  const messages = document.getElementById('messages');
+  messages.innerHTML = '';
+
+  // Opening message
+  appendMessage('ai', char.emoji, char.name, `*${char.name} is now available to chat.*\n\n${getOpeningLine(char)}`);
+
+  renderCharList();
+}
+
+function getOpeningLine(char) {
+  const openings = {
+    'nibnab': 'GREETINGS, mortal! NibNab, cat deity of the infinite void, deigns to grace you with conversation. Kneel... or don\'t. I\'m flexible.',
+    'gerald': '*sighs deeply* Oh. You want to talk. Fine. I\'m Gerald. NibNab\'s advisor. It\'s a long story.',
+    'biscuit': 'oh! oh hello! i didn\'t hear you come in! is everything okay?? are YOU okay?? do you need snacks?? i have emergency snacks.',
+    'matcha-cat': '*slow blink* ... hello. have some tea. there is no rush.',
+    'naruto': 'Hey! I\'m Naruto Uzumaki, and I\'m gonna be Hokage someday — dattebayo! What\'s up?',
+    'light-yagami': '...I\'ve been expecting this conversation. Sit down. Let\'s see what you\'re worth.',
+    'saitama': 'Oh. Hey. Did you need something?',
+    'giga-chad': '*nods*',
+    'entropy': 'Hello! I\'m so pleased you reached out. Everything you build will eventually crumble — but that\'s what makes it beautiful!',
+  };
+  return openings[char.id] || `Hello. I'm ${char.name}. What's on your mind?`;
+}
+
+function appendMessage(role, emoji, name, text) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const avatarBg = currentChar ? currentChar.color + '33' : '#ffffff22';
+  const avatarBorder = currentChar ? currentChar.color + '66' : '#ffffff44';
+  div.innerHTML = `
+    <div class="msg-avatar" style="background:${role==='ai'?avatarBg:'#b060ff33'}; border:1.5px solid ${role==='ai'?avatarBorder:'#b060ff66'}">${role==='ai'?emoji:'🧑'}</div>
+    <div>
+      <div class="msg-sender">${name}</div>
+      <div class="msg-bubble">${formatText(text)}</div>
+    </div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return div;
+}
+
+function formatText(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function showTyping() {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.id = 'typing-indicator';
+  const avatarBg = currentChar ? currentChar.color + '33' : '#ffffff22';
+  const avatarBorder = currentChar ? currentChar.color + '66' : '#ffffff44';
+  div.innerHTML = `
+    <div class="msg-avatar" style="background:${avatarBg}; border:1.5px solid ${avatarBorder}">${currentChar?.emoji||'🤖'}</div>
+    <div>
+      <div class="msg-sender">${currentChar?.name||'AI'}</div>
+      <div class="msg-bubble" style="padding:0"><div class="typing-indicator"><span></span><span></span><span></span></div></div>
+    </div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  if (isLoading || !currentChar) return;
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (!config.workerUrl) {
+    openSettings();
+    return;
+  }
+
+  input.value = '';
+  input.style.height = 'auto';
+  appendMessage('user', '🧑', 'You', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  isLoading = true;
+  showTyping();
+
+  try {
+    const res = await fetch(config.workerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [
+          { role: 'system', content: currentChar.system },
+          ...chatHistory
+        ],
+        max_tokens: 600
+      })
+    });
+
+    removeTyping();
+
+    if (!res.ok) {
+      const err = await res.text();
+      appendMessage('ai', '❌', 'Error', `HTTP ${res.status}: ${err.slice(0,200)}`);
+      isLoading = false;
+      return;
+    }
+
+    const data = await res.json();
+
+    // Handle both direct OpenRouter format and proxied format
+    let reply = '';
+    if (data.choices && data.choices[0]) {
+      reply = data.choices[0].message?.content || data.choices[0].text || '';
+    } else if (data.content) {
+      reply = Array.isArray(data.content)
+        ? data.content.map(b => b.text || '').join('')
+        : data.content;
+    } else if (data.response) {
+      reply = data.response;
+    } else if (typeof data === 'string') {
+      reply = data;
+    } else {
+      reply = JSON.stringify(data);
+    }
+
+    chatHistory.push({ role: 'assistant', content: reply });
+    appendMessage('ai', currentChar.emoji, currentChar.name, reply);
+  } catch(e) {
+    removeTyping();
+    appendMessage('ai', '❌', 'Error', `Failed to reach worker: ${e.message}`);
+  }
+  isLoading = false;
+}
+
+function clearChat() {
+  if (!currentChar) return;
+  chatHistory = [];
+  document.getElementById('messages').innerHTML = '';
+  appendMessage('ai', currentChar.emoji, currentChar.name, `*Chat cleared.* ${getOpeningLine(currentChar)}`);
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+document.getElementById('msg-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+document.getElementById('msg-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+document.getElementById('search-input').addEventListener('input', function() {
+  searchQ = this.value;
+  renderCharList();
+});
+
+loadConfig();
+buildCategoryTabs();
+renderCharList();
+updateConfigBar();
+</script>
+</body>
+</html>
